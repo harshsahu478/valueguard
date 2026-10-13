@@ -1,31 +1,24 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+const auditRequestSchema = z.object({
+  productUrl: z.url(),
+});
 
 export async function POST(request: Request) {
   try {
     const body: unknown = await request.json();
 
-    if (
-      typeof body !== "object" ||
-      body === null ||
-      !("productUrl" in body) ||
-      typeof body.productUrl !== "string"
-    ) {
+    const validation = auditRequestSchema.safeParse(body);
+
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "productUrl must be a string." },
+        { error: "Please provide a valid product URL." },
         { status: 400 },
       );
     }
 
-    let url: URL;
-
-    try {
-      url = new URL(body.productUrl);
-    } catch {
-      return NextResponse.json(
-        { error: "Please provide a valid URL." },
-        { status: 400 },
-      );
-    }
+    const url = new URL(validation.data.productUrl);
 
     if (
       !["http:", "https:"].includes(url.protocol) ||
